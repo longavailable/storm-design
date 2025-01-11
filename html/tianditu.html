@@ -228,36 +228,63 @@
 
 </script>
 <script type="text/javascript">
+    
     //表单提交
-	const form = document.getElementById('testForm');
-
-	form.addEventListener('submit', (event) => {
     
-        event.preventDefault();
-
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-
-        fetch('https://storm-design-request-mail.longlovemyu.com', 
-        {
-            method: 'POST',
-            headers: {
-            'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Success:', data);
-            alert('提交成功！感谢您的反馈。');
-            form.reset(); // 重置表单
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            alert('提交失败，请稍后再试。');
+    function fetchWithTimeout(url, options, timeout = 5000) {
+        // 创建一个超时的Promise
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+                reject(new Error('请求超时'));
+            }, timeout);
         });
-	});
+
+        // 使用Promise.race()方法，当fetch请求完成或者超时，返回对应的Promise结果
+        return Promise.race([
+            fetch(url, options),
+            timeoutPromise
+        ]);
+    }
     
+    function mailRequest(){
+        
+        const form = document.getElementById('testForm');
+
+        form.addEventListener('submit', (event) => {
+        
+            event.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const message = document.getElementById('message').value;
+
+            fetchWithTimeout('https://storm-design-request-mail.longlovemyu.com', 
+                {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                    'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, message })
+                },
+                5000
+            )
+            .then(response=> {
+                console.log('请求响应状态码：', response.status);
+                if (response.ok) {
+                    console.log('Success:', response.data);
+                    alert('提交成功！感谢您的反馈。');
+                    form.reset(); // 重置表单
+                } else {
+                    // 如果状态码不是2xx，抛出错误
+                    throw new Error(`请求失败，状态码：${response.status}`);
+                }
+            })
+            .catch((error) => {
+                alert('提交失败，请稍后再试。');
+            });
+        });
+    }
 </script>
 
 </head> 
@@ -290,10 +317,10 @@
 	<div id="addressMsg" style="font-size:14px"></div>
 	<div id="adminRegion" style="font-size:14px"></div>
 	<form id="testForm">
-	  <input type="text" name="name" placeholder="姓名" required>
-	  <input type="email" name="email" placeholder="邮箱" required>
-	  <input type="text" name="message" placeholder="留言" required>
-	  <button type="submit">提交</button>
+	  <input type="text" id="name" name="name" placeholder="姓名" required>
+	  <input type="email" id="email" name="email" placeholder="邮箱" required>
+	  <input type="text" id="message" name="message" placeholder="留言" required>
+	  <input type="submit" value="提交" onclick="mailRequest();">
 	</form>
 </body> 
 </html>
