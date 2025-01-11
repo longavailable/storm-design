@@ -227,6 +227,37 @@
 	}
 
 </script>
+<script>
+    //表单提交
+	const form = document.getElementById('testForm');
+
+	form.addEventListener('submit', (event) => {
+	event.preventDefault();
+
+	const formData = new FormData(form);
+	const data = Object.fromEntries(formData.entries());
+
+	fetch('https://storm-design-request-mail.longlovemyu.com', 
+    {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+	})
+	.then(response => response.json())
+	.then(data => {
+        console.log('Success:', data);
+        alert('提交成功！感谢您的反馈。');
+        form.reset(); // 重置表单
+	})
+	.catch((error) => {
+        console.error('Error:', error);
+        alert('提交失败，请稍后再试。');
+	});
+	});
+</script>
+
 </head> 
 <body onLoad="onLoad()"> 
 	
@@ -256,5 +287,11 @@
 	
 	<div id="addressMsg" style="font-size:14px"></div>
 	<div id="adminRegion" style="font-size:14px"></div>
+	<form id="testForm">
+	  <input type="text" name="name" placeholder="姓名" required>
+	  <input type="email" name="email" placeholder="邮箱" required>
+	  <input type="text" name="message" placeholder="留言" required>
+	  <button type="submit">提交</button>
+	</form>
 </body> 
 </html>
