@@ -5,6 +5,27 @@
 <meta name="keywords" content="天地图web应用"/> 
 <title>天地图－地图API</title>
 <style type="text/css">body,html{width:100%;height:100%;margin:0;font-family:"Microsoft YaHei"}#mapDiv{width:30%;height:400px}input,b,p{margin-left:5px;font-size:14px}</style>
+<style> 
+    .status-frame {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .status-frame p {
+        margin: 5px 0;
+        font-size: 14px;
+    }
+    .status-frame p.success {
+        color: #28a745;
+    }
+    .status-frame p.error {
+        color: #dc3545;
+    }
+</style>
 <script type="text/javascript" src="https://api.tianditu.gov.cn/api?v=4.0&tk=403b9ac6155d03e40f0cfb3c61800099"></script>
 <script src="https://cdn.jsdelivr.net/gh/longavailable/jQuery-city-selector@main/jquery-1.7.min.js" type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/gh/longavailable/jQuery-city-selector@main/Area.js" type="text/javascript"></script>
@@ -257,32 +278,44 @@
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const message = document.getElementById('message').value;
-
-            fetchWithTimeout('https://storm-design-request-mail.longlovemyu.com', 
-                {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
+            
+            const statusFrame = document.getElementById('statusFrame');
+            
+            const timestamp = new Date().toLocaleString();
+            const submitInfo = `${timestamp} - 提交信息: 姓名: ${name}, 邮箱: ${email}, 留言: ${message}`;
+            statusFrame.innerHTML += `<p>${submitInfo}</p>`;
+            
+            const url = 'https://storm-design-request-mail.longlovemyu.com';
+            const options = {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
                     'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ name, email, message })
                 },
-                5000
-            )
-            .then(response=> {
-                console.log('请求响应状态码：', response.status);
-                if (response.ok) {
-                    console.log('Success:', response.data);
-                    alert('提交成功！感谢您的反馈。');
+                body: JSON.stringify({ name, email, message })
+            };
+            
+            fetchWithTimeout(url, options, 10000)
+                .then(response => {
+                    console.log('请求响应状态码：', response.status);
+                    if (response.ok) {
+                        return response.text(); // 使用 response.text() 获取响应文本
+                    } else {
+                        throw new Error(`请求失败，状态码：${response.status}`);
+                    }
+                })
+                .then(data => {
+                    const timestamp = new Date().toLocaleString();
+                    const successInfo = `${timestamp} - 请求成功，返回的数据：${data}`;
+                    statusFrame.innerHTML += `<p class="success">${successInfo}</p>`;
+
                     form.reset(); // 重置表单
-                } else {
-                    // 如果状态码不是2xx，抛出错误
-                    throw new Error(`请求失败，状态码：${response.status}`);
-                }
-            })
-            .catch((error) => {
-                alert('提交失败，请稍后再试。');
-            });
+                })
+                .catch((error) => {
+                    const timestamp = new Date().toLocaleString();
+                    const errorInfo = `${timestamp} - 请求失败，错误信息：${error.message}`;
+                    statusFrame.innerHTML += `<p class="error">${errorInfo}</p>`;
+                });
         });
     }
 </script>
@@ -316,11 +349,14 @@
 	
 	<div id="addressMsg" style="font-size:14px"></div>
 	<div id="adminRegion" style="font-size:14px"></div>
-	<form id="testForm">
-	  <input type="text" id="name" name="name" placeholder="姓名" required>
-	  <input type="email" id="email" name="email" placeholder="邮箱" required>
-	  <input type="text" id="message" name="message" placeholder="留言" required>
-	  <input type="submit" value="提交" onclick="mailRequest();">
-	</form>
+	<div class="container">
+        <form id="testForm">
+          <input type="text" id="name" name="name" placeholder="姓名" required>
+          <input type="email" id="email" name="email" placeholder="邮箱" required>
+          <input type="text" id="message" name="message" placeholder="留言" required>
+          <input type="submit" value="提交" onclick="mailRequest();">
+        </form>
+    </div>
+    <div class="status-frame" id="statusFrame"></div>
 </body> 
 </html>
