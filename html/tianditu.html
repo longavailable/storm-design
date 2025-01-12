@@ -34,6 +34,7 @@
 	var map;
 	var zoom = 12;
 	var geocoder;
+    
 	function onLoad()
 	{
 		/*
@@ -57,7 +58,7 @@
 		map = new T.Map("mapDiv", {datasourcesControl: true});
 		
 		//坐标实例：默认坐标，江苏满江春
-		var lnglat = new T.LngLat(119.48035,32.20632);
+		var lnglat = new T.LngLat(119.45936,32.21859);
 				
 	   	//设置显示地图的中心点和级别
 		map.centerAndZoom( lnglat, zoom );
@@ -94,6 +95,7 @@
 			*/
 					
 			var coords = map.getCenter();
+            geocoder.getLocation(coords, mailRequest);
 			geocoder.getLocation(coords, searchResult2);
 			
 		}else{
@@ -113,7 +115,9 @@
 			//document.getElementById("addressMsg").innerHTML = "<font style='font-weight:700'>省市区：</font>" + addressComponent.city;
 			adminRegion = extractProvinceCityDistrict(addressMsg);
 			//alert(adminRegion);
-			document.getElementById("adminRegion").innerHTML = "<font style='font-weight:700'>详细地址：</font>" + adminRegion;
+			document.getElementById("adminRegion").innerHTML = "<font style='font-weight:700'>行政区：</font>" + adminRegion;
+            
+            return [addressMsg, adminRegion];
 			
 		}else{
 			alert(result.getMsg());
@@ -275,14 +279,28 @@
         
             event.preventDefault();
 
+            const company = document.getElementById('company').value;
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
-            const message = document.getElementById('message').value;
+            
+            var checkbox = document.getElementById('emailRequired');
+            const emailRequired = checkbox.checked ? 'YES' : 'NO';
+            
+            var addressMsg = document.getElementById('addressMsg').textContent;
+            addressMsg = addressMsg.split('：')[1].trim();
+            const adminRegion = document.getElementById('adminRegion').textContent.split("：")[1].trim();
+			//var [addressMsg, adminRegion] = searchResult2(geocoder.getLocation(coords));
+            
+            var coords = map.getCenter();
+            var pointLng = coords.getLng(); 
+            var pointLat = coords.getLat();
             
             const statusFrame = document.getElementById('statusFrame');
             
+            //alert( company + name + email + emailRequired + pointLng + pointLat + addressMsg + adminRegion);
+            
             const timestamp = new Date().toLocaleString();
-            const submitInfo = `${timestamp} - 提交信息: 姓名: ${name}, 邮箱: ${email}, 留言: ${message}`;
+            const submitInfo = `${timestamp} - 提交信息: 公司: ${company} 姓名: ${name}, 邮箱: ${email}, 发送到邮箱: ${emailRequired}, 详细地址: ${addressMsg}, 行政区: ${adminRegion}, 中心经度: ${pointLng}, 纬度: ${pointLat}`
             statusFrame.innerHTML += `<p>${submitInfo}</p>`;
             
             const url = 'https://storm-design-request-mail.longlovemyu.com';
@@ -292,7 +310,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ name, email, message })
+                body: JSON.stringify({ company, name, email, emailRequired, addressMsg, adminRegion, pointLng, pointLat })
             };
             
             fetchWithTimeout(url, options, 10000)
@@ -325,7 +343,7 @@
 	
 	<div id="directSearch">
 		<label>直接输入地点：</label>
-		<input type="text" id="searchPoint" value="镇江市京口区梦溪路253号" />
+		<input type="text" id="searchPoint" value="镇江市京口区四牌楼街道梦溪路253号" />
 		<input type="button" value="搜索" onclick="search();" />
 	</div>
 	
@@ -351,12 +369,27 @@
 	<div id="adminRegion" style="font-size:14px"></div>
 	<div class="container">
         <form id="testForm">
-          <input type="text" id="name" name="name" placeholder="姓名" required>
+          <input type="text" id="company" name="company" placeholder="单位（选填）">
+          <input type="text" id="name" name="name" placeholder="姓名（选填）">
           <input type="email" id="email" name="email" placeholder="邮箱" required>
-          <input type="text" id="message" name="message" placeholder="留言" required>
+          <input type="checkbox" id="emailRequired" name="emailRequired" checked><label for="emailRequired">发送到邮箱</label>
           <input type="submit" value="提交" onclick="mailRequest();">
         </form>
     </div>
     <div class="status-frame" id="statusFrame"></div>
-</body> 
+    <script>
+        //监听输入框中的回车键 
+        //获取输入框元素
+        var searchInput = document.getElementById("searchPoint");
+
+        // 为输入框添加 keydown 事件监听器
+        searchInput.addEventListener("keydown", function(event) {
+            // 检测是否按下了回车键（键码为 13）
+            if (event.keyCode === 13) {
+                // 调用 search() 函数
+                search();
+            }
+        });
+    </script>
+</body>
 </html>
